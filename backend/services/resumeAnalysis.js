@@ -166,6 +166,10 @@ Respond in JSON format as an array of objects with keys: category, title, descri
  */
 export const generateInterviewQuestions = async (resumeText, skills) => {
   try {
+    console.log('🎯 Generating interview questions...');
+    console.log(`   Resume length: ${resumeText.length} chars`);
+    console.log(`   Skills count: ${skills.length}`);
+    
     const prompt = `Based on this resume and skills, generate 8-10 relevant interview questions. Include a mix of technical, behavioral, and situational questions.
 
 Resume excerpt:
@@ -174,15 +178,86 @@ ${resumeText.substring(0, 2000)}
 Key Skills:
 ${skills.slice(0, 10).join(', ')}
 
-Respond in JSON format as an array of objects with keys: question, category (technical/behavioral/situational), difficulty (easy/medium/hard)`;
+Respond ONLY with a valid JSON array. Each question must have: question, category (technical/behavioral/situational), difficulty (easy/medium/hard).
+
+Example format:
+[
+  {
+    "question": "Can you describe a challenging project you worked on?",
+    "category": "behavioral",
+    "difficulty": "medium"
+  }
+]`;
 
     const response = await generateAIResponse(prompt, 1500);
+    console.log('📝 AI Response received:', response.substring(0, 200));
+    
     const questions = parseAIJSON(response);
-    return Array.isArray(questions) ? questions : [];
+    console.log(`✅ Parsed ${questions.length} questions`);
+    
+    // Validate questions
+    const validQuestions = Array.isArray(questions) 
+      ? questions.filter(q => q.question && q.category && q.difficulty)
+      : [];
+    
+    if (validQuestions.length === 0) {
+      console.warn('⚠️  No valid questions generated, using fallback');
+      return generateFallbackInterviewQuestions(skills);
+    }
+    
+    return validQuestions;
   } catch (error) {
-    console.error('Interview Questions Generation Error:', error.message);
-    return [];
+    console.error('❌ Interview Questions Generation Error:', error.message);
+    console.error('   Stack:', error.stack);
+    return generateFallbackInterviewQuestions(skills);
   }
+};
+
+/**
+ * Generate fallback interview questions when AI fails
+ * @param {Array} skills - Skills array
+ * @returns {Array} - Fallback questions
+ */
+const generateFallbackInterviewQuestions = (skills) => {
+  const topSkills = skills.slice(0, 5);
+  const questions = [
+    {
+      question: "Can you walk me through your resume and highlight your key accomplishments?",
+      category: "behavioral",
+      difficulty: "easy"
+    },
+    {
+      question: "Tell me about a challenging project you worked on and how you overcame obstacles.",
+      category: "behavioral",
+      difficulty: "medium"
+    },
+    {
+      question: "How do you stay updated with the latest trends and technologies in your field?",
+      category: "behavioral",
+      difficulty: "easy"
+    },
+    {
+      question: "Describe a time when you had to work under pressure to meet a deadline.",
+      category: "situational",
+      difficulty: "medium"
+    },
+    {
+      question: "How do you prioritize tasks when working on multiple projects simultaneously?",
+      category: "situational",
+      difficulty: "medium"
+    },
+  ];
+  
+  // Add skill-specific questions
+  topSkills.forEach(skill => {
+    questions.push({
+      question: `Can you describe your experience with ${skill} and provide a specific example?`,
+      category: "technical",
+      difficulty: "medium"
+    });
+  });
+  
+  return questions.slice(0, 10);
 };
 
 /**

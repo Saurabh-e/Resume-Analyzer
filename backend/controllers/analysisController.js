@@ -126,27 +126,51 @@ export const getAnalysisById = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getInterviewQuestions = asyncHandler(async (req, res) => {
+  console.log(`📋 Generating interview questions for analysis: ${req.params.id}`);
+  
   const analysis = await Analysis.findOne({
     _id: req.params.id,
     userId: req.user._id,
   }).populate('resumeId');
 
   if (!analysis) {
+    console.log('❌ Analysis not found');
     return res.status(404).json({
       success: false,
       message: 'Analysis not found',
     });
   }
 
+  console.log(`✅ Analysis found: ${analysis._id}`);
+  console.log(`   Resume ID: ${analysis.resumeId._id}`);
+  console.log(`   Matched Skills: ${analysis.matchedSkills.length}`);
+
   // Generate if not already generated
   if (!analysis.interviewQuestions || analysis.interviewQuestions.length === 0) {
-    const questions = await generateInterviewQuestions(
-      analysis.resumeId.resumeText,
-      analysis.matchedSkills
-    );
+    console.log('🔄 Generating new interview questions...');
+    
+    try {
+      const questions = await generateInterviewQuestions(
+        analysis.resumeId.resumeText,
+        analysis.matchedSkills
+      );
 
-    analysis.interviewQuestions = questions;
-    await analysis.save();
+      console.log(`✅ Generated ${questions.length} questions`);
+
+      analysis.interviewQuestions = questions;
+      await analysis.save();
+      
+      console.log('💾 Saved interview questions to database');
+    } catch (error) {
+      console.error('❌ Error generating interview questions:', error.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate interview questions',
+        error: error.message,
+      });
+    }
+  } else {
+    console.log(`✅ Using cached interview questions (${analysis.interviewQuestions.length})`);
   }
 
   res.json({
