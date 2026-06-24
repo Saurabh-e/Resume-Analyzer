@@ -35,6 +35,16 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
+    // Handle network errors
+    if (!error.response) {
+      // Network error (server not reachable)
+      console.error('Network Error:', error.message);
+      const message = error.code === 'ECONNABORTED' 
+        ? 'Request timeout - Server took too long to respond'
+        : 'Network Error - Cannot connect to server. Please check if the backend is running.';
+      return Promise.reject({ message, code: error.code });
+    }
+
     const message =
       error.response?.data?.message ||
       error.message ||

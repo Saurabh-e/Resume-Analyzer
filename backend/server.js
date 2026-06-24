@@ -44,21 +44,33 @@ connectDB().catch(err => {
 
 /**
  * Start Server
+ * Render provides PORT via environment variable
  */
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0'; // Render requires binding to 0.0.0.0
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
 ║      🚀 AI Resume Analyzer Server                        ║
 ║                                                           ║
 ║      Environment: ${process.env.NODE_ENV.padEnd(37)}    ║
+║      Host: ${HOST.padEnd(47)}    ║
 ║      Port: ${PORT.toString().padEnd(44)}    ║
 ║      Status: Running ✓                                   ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
+  
+  // Log important info for debugging in production
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🔧 Production Configuration:');
+    console.log(`   - CORS Origin: ${process.env.CLIENT_URL || 'Not Set'}`);
+    console.log(`   - MongoDB: ${process.env.MONGODB_URI ? 'Configured' : 'Not Set'}`);
+    console.log(`   - JWT Secret: ${process.env.JWT_SECRET ? 'Configured' : 'Not Set'}`);
+    console.log(`   - Groq API: ${process.env.GROQ_API_KEY ? 'Configured' : 'Not Set'}`);
+  }
 });
 
 /**
