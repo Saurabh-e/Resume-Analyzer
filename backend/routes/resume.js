@@ -9,7 +9,6 @@ import {
 import { protect } from '../middleware/auth.js';
 import { uploadResume as uploadMiddleware, handleUploadError } from '../middleware/upload.js';
 import { resumeIdValidation, uploadResumeValidation } from '../validations/resumeValidation.js';
-import { uploadLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -19,7 +18,6 @@ router.use(protect);
 // Upload resume
 router.post(
   '/upload',
-  uploadLimiter,
   uploadMiddleware,
   handleUploadError,
   uploadResumeValidation,

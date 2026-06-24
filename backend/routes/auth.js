@@ -14,13 +14,12 @@ import {
   updateProfileValidation,
   changePasswordValidation,
 } from '../validations/authValidation.js';
-import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
 // Public routes
-router.post('/register', authLimiter, registerValidation, register);
-router.post('/login', authLimiter, loginValidation, login);
+router.post('/register', registerValidation, register);
+router.post('/login', loginValidation, login);
 
 // Protected routes
 router.get('/profile', protect, getProfile);

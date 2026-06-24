@@ -15,7 +15,6 @@ import {
   analysisIdValidation,
   rewriteSectionValidation,
 } from '../validations/resumeValidation.js';
-import { analysisLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -25,7 +24,6 @@ router.use(protect);
 // Analyze resume
 router.post(
   '/analyze/:resumeId',
-  analysisLimiter,
   analysisValidation,
   analyzeResumeById
 );
@@ -34,7 +32,7 @@ router.post(
 router.get('/', getAnalyses);
 
 // Rewrite section
-router.post('/rewrite', analysisLimiter, rewriteSectionValidation, rewriteSection);
+router.post('/rewrite', rewriteSectionValidation, rewriteSection);
 
 // Get single analysis
 router.get('/:id', analysisIdValidation, getAnalysisById);

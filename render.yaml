@@ -24,11 +24,24 @@ services:
       - key: MAX_FILE_SIZE
         value: 5242880
       - key: ALLOWED_FILE_TYPES
-        value: application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        value: application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf
       - key: CLIENT_URL
-        sync: false
+        value: https://resume-analyzer-uzym.onrender.com
       - key: RATE_LIMIT_WINDOW_MS
         value: 900000
       - key: RATE_LIMIT_MAX_REQUESTS
         value: 100
+    autoDeploy: true
+
+  # Frontend Service
+  - type: web
+    name: ai-resume-analyzer-frontend
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: cd client && npm install && npm run build
+    startCommand: cd client && npx serve -s dist -l $PORT
+    envVars:
+      - key: VITE_API_URL
+        value: https://ai-resume-analyzer-api.onrender.com/api
     autoDeploy: true

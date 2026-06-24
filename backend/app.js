@@ -6,7 +6,6 @@ import compression from 'compression';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-import { apiLimiter } from './middleware/rateLimiter.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -115,11 +114,6 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   app.use(morgan('combined'));
 }
-
-/**
- * Rate Limiting
- */
-app.use('/api/', apiLimiter);
 
 /**
  * Handle preflight requests explicitly
