@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-surface text-on-surface transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.glow-teal {
+  box-shadow: 0 0 20px rgba(0, 106, 97, 0.2);
+}
+
+/* Glassmorphism custom classes */
+.glass-panel {
+  @apply bg-white/70 backdrop-blur-md border border-white/20 dark:bg-slate-900/60 dark:border-slate-800/40;
+}
+
+.glass-card {
+  @apply bg-white/80 backdrop-blur-lg border border-white/30 shadow-xl dark:bg-slate-900/80 dark:border-slate-800/50 dark:shadow-2xl dark:shadow-slate-950/20;
+}
+
+/* Animated gradient blobs */
+.blur-blob {
+  @apply absolute rounded-full mix-blend-multiply filter blur-3xl opacity-30 dark:mix-blend-screen;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700;
+}
