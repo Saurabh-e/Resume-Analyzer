@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { resumeAPI, analysisAPI } from '../services/api';
 import { FileText, Trash2, Eye, Upload, Calendar, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,6 +9,8 @@ const Resumes = () => {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [analyzingId, setAnalyzingId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchResumes();
@@ -20,7 +22,8 @@ const Resumes = () => {
       const response = await resumeAPI.getAll();
       setResumes(response.data.resumes || []);
     } catch (error) {
-      toast.error('Failed to load resumes');
+      console.error('Error fetching resumes:', error);
+      toast.error(error?.message || 'Failed to load resumes');
     } finally {
       setLoading(false);
     }
@@ -33,21 +36,31 @@ const Resumes = () => {
       toast.success('Resume deleted successfully');
       fetchResumes();
     } catch (error) {
-      toast.error('Failed to delete resume');
+      console.error('Error deleting resume:', error);
+      toast.error(error?.message || 'Failed to delete resume');
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleAnalyze = async (id) => {
+    setAnalyzingId(id);
     try {
       toast.loading('Analyzing resume with AI...', { id: 'analyze' });
       const response = await analysisAPI.analyze(id, {});
       toast.success('Analysis complete!', { id: 'analyze' });
-      // Navigate to analysis page
-      window.location.href = `/analysis/${response.data._id}`;
+      
+      // Use React Router navigation instead of window.location
+      if (response?.data?._id) {
+        navigate(`/analysis/${response.data._id}`);
+      } else {
+        throw new Error('Invalid response from analysis API');
+      }
     } catch (error) {
-      toast.error('Failed to analyze resume', { id: 'analyze' });
+      console.error('Error analyzing resume:', error);
+      toast.error(error?.message || 'Failed to analyze resume', { id: 'analyze' });
+    } finally {
+      setAnalyzingId(null);
     }
   };
 
@@ -146,10 +159,20 @@ const Resumes = () => {
                 <div className="flex space-x-2 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60">
                   <button
                     onClick={() => handleAnalyze(resume._id)}
-                    className="flex-1 flex items-center justify-center space-x-1.5 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition transform active:scale-95"
+                    disabled={analyzingId === resume._id}
+                    className="flex-1 flex items-center justify-center space-x-1.5 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Eye className="h-4 w-4" />
-                    <span>Analyze</span>
+                    {analyzingId === resume._id ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span>Analyzing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        <span>Analyze</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => {
@@ -157,8 +180,8 @@ const Resumes = () => {
                         handleDelete(resume._id);
                       }
                     }}
-                    disabled={deletingId === resume._id}
-                    className="flex items-center justify-center px-3 py-2 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-100 dark:hover:border-red-900/10 transition"
+                    disabled={deletingId === resume._id || analyzingId === resume._id}
+                    className="flex items-center justify-center px-3 py-2 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-100 dark:hover:border-red-900/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete Resume"
                   >
                     {deletingId === resume._id ? (
