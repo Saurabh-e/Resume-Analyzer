@@ -27,7 +27,7 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disable for API
 }));
 
-// Enable CORS - Universal permissive configuration
+// Enable CORS - Fully permissive configuration
 console.log('🔧 CORS Configuration:');
 console.log(`   - NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`   - CLIENT_URL: ${process.env.CLIENT_URL || 'not set'}`);
@@ -35,7 +35,8 @@ console.log(`   - CLIENT_URL: ${process.env.CLIENT_URL || 'not set'}`);
 // Build allowed origins list
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  'https://resume-analyzer-fojo.vercel.app', // Add your actual frontend URL
+  'https://resume-analyzer-uzym.onrender.com',
+  'https://resume-analyzer-fojo.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
@@ -45,39 +46,15 @@ const allowedOrigins = [
 
 console.log(`   - Allowed Origins: ${allowedOrigins.join(', ')}`);
 
+// Simple CORS - allow all origins
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Log every CORS check
-      console.log(`\n🔍 CORS Request from: ${origin || 'no-origin'}`);
-      console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
-      
-      // Allow requests with no origin (Postman, mobile apps, same-origin)
-      if (!origin) {
-        console.log('✅ No origin - allowed');
-        return callback(null, true);
-      }
-      
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        console.log('✅ Origin in allowed list - allowed');
-        return callback(null, true);
-      }
-      
-      // If not in list, but CLIENT_URL is not set, allow anyway (initial deployment)
-      if (!process.env.CLIENT_URL || process.env.CLIENT_URL === '') {
-        console.log('⚠️  CLIENT_URL not set - allowing origin temporarily');
-        return callback(null, true);
-      }
-      
-      console.warn('❌ Origin not in allowed list - blocked');
-      return callback(new Error('Not allowed by CORS'));
-    },
+    origin: true, // Allow all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 600, // Cache preflight requests for 10 minutes
+    maxAge: 600,
   })
 );
 
