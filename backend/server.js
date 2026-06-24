@@ -11,6 +11,10 @@ dotenv.config();
 process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 process.env.PORT = process.env.PORT || '5000';
 
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public")));
+
+
 /**
  * Validate Required Environment Variables
  */
