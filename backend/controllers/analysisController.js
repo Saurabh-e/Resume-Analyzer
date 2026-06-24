@@ -185,27 +185,51 @@ export const getInterviewQuestions = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getCareerRecommendations = asyncHandler(async (req, res) => {
+  console.log(`🎯 Generating career recommendations for analysis: ${req.params.id}`);
+  
   const analysis = await Analysis.findOne({
     _id: req.params.id,
     userId: req.user._id,
   }).populate('resumeId');
 
   if (!analysis) {
+    console.log('❌ Analysis not found');
     return res.status(404).json({
       success: false,
       message: 'Analysis not found',
     });
   }
 
+  console.log(`✅ Analysis found: ${analysis._id}`);
+  console.log(`   Resume ID: ${analysis.resumeId._id}`);
+  console.log(`   Matched Skills: ${analysis.matchedSkills.length}`);
+
   // Generate if not already generated
   if (!analysis.careerRecommendations || analysis.careerRecommendations.length === 0) {
-    const recommendations = await generateCareerRecommendations(
-      analysis.resumeId.resumeText,
-      analysis.matchedSkills
-    );
+    console.log('🔄 Generating new career recommendations...');
+    
+    try {
+      const recommendations = await generateCareerRecommendations(
+        analysis.resumeId.resumeText,
+        analysis.matchedSkills
+      );
 
-    analysis.careerRecommendations = recommendations;
-    await analysis.save();
+      console.log(`✅ Generated ${recommendations.length} recommendations`);
+
+      analysis.careerRecommendations = recommendations;
+      await analysis.save();
+      
+      console.log('💾 Saved career recommendations to database');
+    } catch (error) {
+      console.error('❌ Error generating career recommendations:', error.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate career recommendations',
+        error: error.message,
+      });
+    }
+  } else {
+    console.log(`✅ Using cached career recommendations (${analysis.careerRecommendations.length})`);
   }
 
   res.json({

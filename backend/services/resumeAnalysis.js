@@ -268,6 +268,10 @@ const generateFallbackInterviewQuestions = (skills) => {
  */
 export const generateCareerRecommendations = async (resumeText, skills) => {
   try {
+    console.log('🚀 Generating career recommendations...');
+    console.log(`   Resume length: ${resumeText.length} chars`);
+    console.log(`   Skills count: ${skills.length}`);
+    
     const prompt = `Based on this resume and skills, suggest 5 potential career paths or job titles that would be a good fit. Include relevance score (0-100) for each.
 
 Resume excerpt:
@@ -276,15 +280,150 @@ ${resumeText.substring(0, 2000)}
 Key Skills:
 ${skills.slice(0, 15).join(', ')}
 
-Respond in JSON format as an array of objects with keys: title, description, relevanceScore`;
+Respond ONLY with a valid JSON array. Each recommendation must have: title, description, relevanceScore (number 0-100).
+
+Example format:
+[
+  {
+    "title": "Senior Software Engineer",
+    "description": "Lead development projects and mentor junior developers",
+    "relevanceScore": 85
+  }
+]`;
 
     const response = await generateAIResponse(prompt, 1200);
+    console.log('📝 AI Response received:', response.substring(0, 200));
+    
     const recommendations = parseAIJSON(response);
-    return Array.isArray(recommendations) ? recommendations : [];
+    console.log(`✅ Parsed ${recommendations.length} recommendations`);
+    
+    // Validate recommendations
+    const validRecommendations = Array.isArray(recommendations)
+      ? recommendations.filter(r => r.title && r.description && typeof r.relevanceScore === 'number')
+      : [];
+    
+    if (validRecommendations.length === 0) {
+      console.warn('⚠️  No valid recommendations generated, using fallback');
+      return generateFallbackCareerRecommendations(skills);
+    }
+    
+    return validRecommendations;
   } catch (error) {
-    console.error('Career Recommendations Error:', error.message);
-    return [];
+    console.error('❌ Career Recommendations Error:', error.message);
+    console.error('   Stack:', error.stack);
+    return generateFallbackCareerRecommendations(skills);
   }
+};
+
+/**
+ * Generate fallback career recommendations when AI fails
+ * @param {Array} skills - Skills array
+ * @returns {Array} - Fallback recommendations
+ */
+const generateFallbackCareerRecommendations = (skills) => {
+  // Analyze skills to suggest relevant careers
+  const hasWebDev = skills.some(s => 
+    ['javascript', 'react', 'angular', 'vue', 'html', 'css', 'frontend', 'web'].some(tech => 
+      s.toLowerCase().includes(tech)
+    )
+  );
+  
+  const hasBackend = skills.some(s => 
+    ['python', 'java', 'node', 'spring', 'django', 'backend', 'api', 'database'].some(tech => 
+      s.toLowerCase().includes(tech)
+    )
+  );
+  
+  const hasDataScience = skills.some(s => 
+    ['python', 'machine learning', 'data', 'analytics', 'ml', 'ai', 'tensorflow', 'pandas'].some(tech => 
+      s.toLowerCase().includes(tech)
+    )
+  );
+  
+  const hasDevOps = skills.some(s => 
+    ['docker', 'kubernetes', 'aws', 'azure', 'ci/cd', 'jenkins', 'devops', 'cloud'].some(tech => 
+      s.toLowerCase().includes(tech)
+    )
+  );
+  
+  const hasManagement = skills.some(s => 
+    ['leadership', 'management', 'team', 'project', 'agile', 'scrum'].some(tech => 
+      s.toLowerCase().includes(tech)
+    )
+  );
+
+  const recommendations = [];
+
+  if (hasWebDev && hasBackend) {
+    recommendations.push({
+      title: "Full Stack Developer",
+      description: "Build complete web applications from frontend to backend, working with modern frameworks and databases.",
+      relevanceScore: 90
+    });
+  }
+
+  if (hasWebDev) {
+    recommendations.push({
+      title: "Frontend Developer",
+      description: "Create engaging user interfaces and experiences using modern web technologies and frameworks.",
+      relevanceScore: 85
+    });
+  }
+
+  if (hasBackend) {
+    recommendations.push({
+      title: "Backend Engineer",
+      description: "Design and implement server-side logic, APIs, and database architectures for scalable applications.",
+      relevanceScore: 85
+    });
+  }
+
+  if (hasDataScience) {
+    recommendations.push({
+      title: "Data Scientist",
+      description: "Analyze complex data sets and build machine learning models to drive business insights and decisions.",
+      relevanceScore: 82
+    });
+  }
+
+  if (hasDevOps) {
+    recommendations.push({
+      title: "DevOps Engineer",
+      description: "Automate deployment pipelines, manage cloud infrastructure, and ensure reliable system operations.",
+      relevanceScore: 80
+    });
+  }
+
+  if (hasManagement) {
+    recommendations.push({
+      title: "Technical Lead",
+      description: "Lead engineering teams, make architectural decisions, and guide technical strategy.",
+      relevanceScore: 78
+    });
+  }
+
+  // Add generic recommendations if not enough specific ones
+  if (recommendations.length < 3) {
+    recommendations.push(
+      {
+        title: "Software Engineer",
+        description: "Develop software solutions across various domains using your technical skills and experience.",
+        relevanceScore: 75
+      },
+      {
+        title: "Solutions Architect",
+        description: "Design comprehensive technical solutions and system architectures for complex business needs.",
+        relevanceScore: 72
+      },
+      {
+        title: "Technical Consultant",
+        description: "Provide expert technical guidance and solutions to clients across different industries.",
+        relevanceScore: 70
+      }
+    );
+  }
+
+  return recommendations.slice(0, 5);
 };
 
 /**
