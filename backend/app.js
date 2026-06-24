@@ -28,14 +28,15 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disable for API
 }));
 
-// Enable CORS - Simple and permissive configuration
+// Enable CORS - Universal permissive configuration
 console.log('🔧 CORS Configuration:');
-console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
-console.log(`   - CLIENT_URL: ${process.env.CLIENT_URL || 'Not set'}`);
+console.log(`   - NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`   - CLIENT_URL: ${process.env.CLIENT_URL || 'not set'}`);
 
 // Build allowed origins list
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  'https://resume-analyzer-fojo.vercel.app', // Add your actual frontend URL
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
@@ -50,6 +51,7 @@ app.use(
     origin: (origin, callback) => {
       // Log every CORS check
       console.log(`\n🔍 CORS Request from: ${origin || 'no-origin'}`);
+      console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
       
       // Allow requests with no origin (Postman, mobile apps, same-origin)
       if (!origin) {
@@ -57,19 +59,19 @@ app.use(
         return callback(null, true);
       }
       
-      // In production, allow all origins temporarily to diagnose
-      if (process.env.NODE_ENV === 'production') {
-        console.log('✅ Production mode - allowing all origins');
-        return callback(null, true);
-      }
-      
-      // In development, check the allowed list
+      // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
-        console.log('✅ Origin in allowed list');
+        console.log('✅ Origin in allowed list - allowed');
         return callback(null, true);
       }
       
-      console.warn('❌ Origin not in allowed list');
+      // If not in list, but CLIENT_URL is not set, allow anyway (initial deployment)
+      if (!process.env.CLIENT_URL || process.env.CLIENT_URL === '') {
+        console.log('⚠️  CLIENT_URL not set - allowing origin temporarily');
+        return callback(null, true);
+      }
+      
+      console.warn('❌ Origin not in allowed list - blocked');
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
