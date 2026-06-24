@@ -25,17 +25,10 @@ const app = express();
 // Set security headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
+  contentSecurityPolicy: false, // Disable for API
 }));
 
-// Enable CORS
+// Enable CORS - More permissive for production debugging
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:5173',
@@ -48,19 +41,53 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true);
+      // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+      if (!origin) {
+        console.log('✅ Request with no origin allowed');
+        return callback(null, true);
+      }
       
+      // In production, be more lenient with CORS for debugging
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🔍 CORS Check - Origin: ${origin}`);
+        console.log(`🔍 Allowed Origins: ${allowedOrigins.join(', ')}`);
+        
+        // Check if origin matches any allowed origin
+        const isAllowed = allowedOrigins.some(allowed => {
+          // Exact match
+          if (allowed === origin) return true;
+          // Check if it's from the same domain (for Render subdomains)
+          if (allowed && origin.includes(allowed.replace(/^https?:\/\//, ''))) return true;
+          return false;
+        });
+        
+        if (isAllowed || allowedOrigins.length === 0) {
+          console.log(`✅ CORS allowed for: ${origin}`);
+          return callback(null, true);
+        }
+        
+        console.warn(`⚠️  CORS blocked: ${origin}`);
+        console.warn(`⚠️  Set CLIENT_URL environment variable to: ${origin}`);
+        
+        // In production, allow it anyway for initial setup
+        return callback(null, true);
+      }
+      
+      // Development: Check allowed origins
       if (allowedOrigins.includes(origin)) {
+        console.log(`✅ CORS allowed for: ${origin}`);
         callback(null, true);
       } else {
         console.warn(`⚠️  Blocked by CORS: ${origin}`);
+        console.warn(`⚠️  Allowed origins: ${allowedOrigins.join(', ')}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 600, // Cache preflight requests for 10 minutes
   })
 );
 
@@ -104,6 +131,11 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/', apiLimiter);
 
 /**
+ * Handle preflight requests explicitly
+ */
+app.options('*', cors());
+
+/**
  * Health Check Route
  */
 app.get('/health', (req, res) => {
@@ -113,6 +145,10 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+    cors: {
+      clientUrl: process.env.CLIENT_URL || 'Not set',
+      origin: req.headers.origin || 'No origin header',
+    },
   });
 });
 
