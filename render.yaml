@@ -1,18 +1,15 @@
 services:
-  # Backend API Service
+  # Backend API Service for Render
   - type: web
     name: ai-resume-analyzer-api
     runtime: node
-    region: oregon
-    plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
@@ -21,27 +18,16 @@ services:
         value: 7d
       - key: GROQ_API_KEY
         sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
       - key: MAX_FILE_SIZE
         value: 5242880
       - key: ALLOWED_FILE_TYPES
         value: application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf
-      - key: CLIENT_URL
-        value: https://resume-analyzer-uzym.onrender.com
       - key: RATE_LIMIT_WINDOW_MS
         value: 900000
       - key: RATE_LIMIT_MAX_REQUESTS
         value: 100
-    autoDeploy: true
-
-  # Frontend Service
-  - type: web
-    name: ai-resume-analyzer-frontend
-    runtime: node
-    region: oregon
-    plan: free
-    buildCommand: cd client && npm install && npm run build
-    startCommand: cd client && npx serve -s dist -l $PORT
-    envVars:
-      - key: VITE_API_URL
-        value: https://ai-resume-analyzer-api.onrender.com/api
     autoDeploy: true

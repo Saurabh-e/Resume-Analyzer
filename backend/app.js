@@ -35,8 +35,7 @@ console.log(`   - CLIENT_URL: ${process.env.CLIENT_URL || 'not set'}`);
 // Build allowed origins list
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  'https://resume-analyzer-uzym.onrender.com',
-  'https://resume-analyzer-fojo.vercel.app',
+  process.env.FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
@@ -46,17 +45,31 @@ const allowedOrigins = [
 
 console.log(`   - Allowed Origins: ${allowedOrigins.join(', ')}`);
 
-// Simple CORS - allow all origins
-app.use(
-  cors({
-    origin: true, // Allow all origins
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 600,
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests (Postman, health checks, server-to-server)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+
+    // Support Vercel production and preview deployments
+    if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com')) {
+      return callback(null, true);
+    }
+
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 600,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Sanitize data against NoSQL injection
 app.use(mongoSanitize());
@@ -66,17 +79,6 @@ app.use(mongoSanitize());
  */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Log all incoming requests in development
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`\n📥 ${req.method} ${req.path}`);
-    if (req.body && Object.keys(req.body).length > 0) {
-      console.log('Body:', JSON.stringify(req.body, null, 2));
-    }
-    next();
-  });
-}
 
 /**
  * Compression Middleware
@@ -91,11 +93,6 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   app.use(morgan('combined'));
 }
-
-/**
- * Handle preflight requests explicitly
- */
-app.options('*', cors());
 
 /**
  * Health Check Route

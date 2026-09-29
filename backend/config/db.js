@@ -2,11 +2,13 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import dns from 'dns';
 
-// Set DNS servers for Node's dns resolution to bypass local router issues resolving MongoDB Atlas SRV records.
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (err) {
-  console.warn('⚠️ Failed to set DNS servers:', err.message);
+// Optional: Set custom DNS servers if explicitly enabled in environment
+if (process.env.SET_CUSTOM_DNS === 'true') {
+  try {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+  } catch (err) {
+    console.warn('⚠️ Failed to set custom DNS servers:', err.message);
+  }
 }
 
 // Load environment variables
